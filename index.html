@@ -3,825 +3,1291 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>色彩採集 Color Hunting</title>
+<title>CLIP 好好懂：文字和照片怎麼配對？</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#17171b;
-    --paper:#f2ede2;
-    --card:#1f2024;
-    --card-mat:#faf7ef;
-    --muted:#9a978d;
-    --muted-dark:#5c5b56;
-    --brass:#c9a961;
-    --brass-dim:#9c8248;
-    --line:#3a3a40;
+    --paper:#F3F6FB;
+    --paper-line:#D7E1EE;
+    --ink:#131B34;
+    --ink-soft:#4B5670;
+    --card:#FFFFFF;
+    --coral:#FF5D3A;
+    --coral-soft:#FFE3DA;
+    --mint:#17A673;
+    --mint-soft:#DBF3E9;
+    --violet:#6C5CE7;
+    --violet-soft:#E7E3FC;
+    --shadow:0 18px 40px rgba(19,27,52,.10);
   }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
   body{
-    background:var(--ink);
-    color:var(--paper);
-    font-family:'Inter',sans-serif;
-    min-height:100vh;
-    padding:48px 24px 96px;
-    background-image:
-      radial-gradient(circle at 15% 10%, rgba(201,169,97,0.06), transparent 40%),
-      radial-gradient(circle at 85% 90%, rgba(201,169,97,0.05), transparent 45%);
-  }
-  .wrap{max-width:1100px;margin:0 auto;}
-
-  header{margin-bottom:44px;}
-  .eyebrow{
-    font-family:'JetBrains Mono',monospace;
-    font-size:11px;
-    letter-spacing:0.22em;
-    text-transform:uppercase;
-    color:var(--brass);
-    margin-bottom:14px;
-  }
-  h1{
-    font-family:'Newsreader',serif;
-    font-weight:500;
-    font-size:clamp(34px,5vw,54px);
-    line-height:1.05;
-    margin:0 0 14px;
-    letter-spacing:-0.01em;
-  }
-  h1 em{font-style:italic;font-weight:400;color:var(--brass);}
-  .sub{
-    color:var(--muted);
-    font-size:15px;
+    margin:0;
+    color:var(--ink);
+    background:
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px),
+      linear-gradient(0deg, var(--paper-line) 1px, transparent 1px),
+      var(--paper);
+    background-size:28px 28px;
+    font-family:"Noto Sans TC", system-ui, sans-serif;
     line-height:1.6;
-    max-width:560px;
-  }
-
-  /* mode switch */
-  .mode-row{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    margin-bottom:24px;
-    flex-wrap:wrap;
-  }
-  .mode-switch{
-    display:inline-flex;
-    border:1px solid var(--line);
-    background:var(--card);
-  }
-  .mode-btn{
-    font-family:'JetBrains Mono',monospace;
-    font-size:11.5px;
-    letter-spacing:0.06em;
-    padding:11px 18px;
-    background:none;
-    border:none;
-    color:var(--muted);
-    cursor:pointer;
-    transition:background-color .15s ease, color .15s ease;
-  }
-  .mode-btn + .mode-btn{border-left:1px solid var(--line);}
-  .mode-btn.active{background:var(--brass); color:var(--ink); font-weight:600;}
-  .mode-btn:not(.active):hover{color:var(--paper);}
-  .mode-hint{
-    font-size:12px;
-    color:var(--muted-dark);
-    font-family:'Inter',sans-serif;
-    line-height:1.5;
-    max-width:420px;
-  }
-
-  /* mixing tray - signature element */
-  .tray{
-    display:flex;
-    gap:0;
-    border:1px solid var(--line);
-    margin-bottom:28px;
-    background:var(--card);
-    position:relative;
-    overflow:hidden;
-  }
-  .tray-swatch{
-    width:180px;
-    min-width:140px;
-    position:relative;
-    transition:background-color .12s linear;
-    border-right:1px solid var(--line);
-  }
-  .tray-swatch::after{
-    content:'';
-    position:absolute;
-    inset:10px;
-    border:1px solid rgba(255,255,255,0.25);
-    pointer-events:none;
-  }
-  .tray-info{
-    flex:1;
-    padding:22px 26px;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    gap:10px;
-  }
-  .tray-label{
-    font-family:'JetBrains Mono',monospace;
-    font-size:10px;
-    letter-spacing:0.18em;
-    text-transform:uppercase;
-    color:var(--muted-dark);
-  }
-  .tray-hex{
-    font-family:'JetBrains Mono',monospace;
-    font-size:26px;
-    font-weight:500;
-    letter-spacing:0.02em;
-    color:var(--paper);
-  }
-  .tray-hex.busy{color:var(--brass);}
-  .tray-rgb{
-    font-family:'JetBrains Mono',monospace;
-    font-size:12.5px;
-    color:var(--muted);
-  }
-  .tray-count{
-    font-size:12.5px;
-    color:var(--muted-dark);
-  }
-  .tray-progress{
-    position:absolute;
-    left:0; bottom:0;
-    height:2px;
-    background:var(--brass);
-    width:0%;
-    transition:width .15s linear;
-  }
-
-  .drop{
-    border:1px dashed var(--line);
-    padding:36px 24px;
-    text-align:center;
-    cursor:pointer;
-    margin-bottom:22px;
-    transition:border-color .2s ease, background-color .2s ease;
-    position:relative;
-  }
-  .drop:hover, .drop.drag{
-    border-color:var(--brass-dim);
-    background:rgba(201,169,97,0.04);
-  }
-  .drop-title{
-    font-family:'Newsreader',serif;
-    font-size:19px;
-    margin-bottom:6px;
-  }
-  .drop-sub{
-    font-family:'JetBrains Mono',monospace;
-    font-size:11px;
-    color:var(--muted-dark);
-    letter-spacing:0.05em;
-  }
-  input[type=file]{display:none;}
-
-  .analyze-row{
-    display:flex;
-    align-items:center;
-    gap:16px;
-    margin-bottom:56px;
-    flex-wrap:wrap;
-  }
-  .analyze-btn{
-    font-family:'JetBrains Mono',monospace;
-    font-size:12.5px;
-    letter-spacing:0.08em;
-    text-transform:uppercase;
-    color:var(--ink);
-    background:var(--brass);
-    border:none;
-    padding:14px 26px;
-    cursor:pointer;
-    transition:background-color .18s ease, transform .12s ease;
-  }
-  .analyze-btn:hover:not(:disabled){background:#dab976;}
-  .analyze-btn:active:not(:disabled){transform:scale(0.97);}
-  .analyze-btn:disabled{
-    background:var(--card);
-    color:var(--muted-dark);
-    border:1px solid var(--line);
-    cursor:not-allowed;
-  }
-  .analyze-note{
-    font-family:'JetBrains Mono',monospace;
-    font-size:11px;
-    color:var(--muted-dark);
-    letter-spacing:0.03em;
-  }
-
-  .section-head{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    border-bottom:1px solid var(--line);
-    padding-bottom:10px;
-    margin-bottom:26px;
-  }
-  .section-title{
-    font-family:'JetBrains Mono',monospace;
-    font-size:11px;
-    letter-spacing:0.18em;
-    text-transform:uppercase;
-    color:var(--muted);
-  }
-  .clear-btn{
-    font-family:'JetBrains Mono',monospace;
-    font-size:11px;
-    letter-spacing:0.05em;
-    color:var(--muted-dark);
-    background:none;
-    border:none;
-    cursor:pointer;
-    text-decoration:underline;
-    text-underline-offset:3px;
-  }
-  .clear-btn:hover{color:var(--brass);}
-
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(190px,1fr));
-    gap:22px;
-  }
-  .card{
-    background:var(--card-mat);
-    padding:10px 10px 0;
-    position:relative;
-    box-shadow:0 6px 18px rgba(0,0,0,0.35);
-    animation:pin .35s ease both;
-  }
-  @keyframes pin{
-    from{opacity:0; transform:translateY(8px) rotate(0deg);}
-    to{opacity:1; transform:translateY(0) rotate(var(--tilt,0deg));}
-  }
-  .card{transform:rotate(var(--tilt,0deg));}
-  .card:hover{transform:rotate(0deg);}
-  .card-photo-wrap{
-    position:relative;
-    width:100%;
-    aspect-ratio:1/1;
-    overflow:hidden;
-  }
-  .card-photo{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    display:block;
-    filter:sepia(0.03) grayscale(0);
-    transition:filter .3s ease;
-  }
-  .card.pending .card-photo{
-    filter:grayscale(0.85) brightness(0.8) sepia(0.03);
-  }
-  .scan-line{
-    position:absolute;
-    left:0; right:0; top:0;
-    height:34%;
-    background:linear-gradient(to bottom, rgba(201,169,97,0) 0%, rgba(201,169,97,0.55) 50%, rgba(201,169,97,0) 100%);
-    transform:translateY(-100%);
-    pointer-events:none;
-    opacity:0;
-  }
-  .card.scanning .scan-line{
-    animation:sweep 0.65s ease-in-out;
-  }
-  @keyframes sweep{
-    0%{ transform:translateY(-100%); opacity:1; }
-    100%{ transform:translateY(400%); opacity:1; }
-  }
-  .pending-tag{
-    position:absolute;
-    left:8px; bottom:8px;
-    font-family:'JetBrains Mono',monospace;
-    font-size:9.5px;
-    letter-spacing:0.1em;
-    color:rgba(255,255,255,0.75);
-    background:rgba(0,0,0,0.45);
-    padding:3px 7px;
-    text-transform:uppercase;
-  }
-  .card-tag{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:10px 2px 12px;
-  }
-  .card-swatch{
-    width:22px;
-    height:22px;
-    border:1px solid rgba(0,0,0,0.15);
-    flex-shrink:0;
-    transition:background-color .1s linear;
-  }
-  .card-text{flex:1; min-width:0;}
-  .card-hex{
-    font-family:'JetBrains Mono',monospace;
-    font-size:12px;
-    color:var(--ink);
-    font-weight:600;
-  }
-  .card-share{
-    font-family:'JetBrains Mono',monospace;
-    font-size:10px;
-    color:var(--brass-dim);
-    margin-top:1px;
-  }
-  .card-name{
-    font-family:'Inter',sans-serif;
-    font-size:10.5px;
-    color:#8a8477;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    margin-top:1px;
-  }
-  .card-remove{
-    position:absolute;
-    top:-8px;
-    right:-8px;
-    width:22px;
-    height:22px;
-    border-radius:50%;
-    background:var(--ink);
-    color:var(--paper);
-    border:1px solid var(--line);
-    font-family:'JetBrains Mono',monospace;
-    font-size:12px;
-    line-height:1;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    opacity:0;
-    transition:opacity .15s ease;
-  }
-  .card:hover .card-remove{opacity:1;}
-
-  .empty-note{
-    color:var(--muted-dark);
-    font-size:13px;
-    font-family:'JetBrains Mono',monospace;
-    padding:20px 0;
-  }
-
-  footer{
-    margin-top:80px;
-    padding-top:20px;
-    border-top:1px solid var(--line);
-    font-family:'JetBrains Mono',monospace;
-    font-size:10.5px;
-    color:var(--muted-dark);
-    letter-spacing:0.05em;
-  }
-
-  @media (max-width:520px){
-    .tray{flex-direction:column;}
-    .tray-swatch{width:100%; height:90px; border-right:none; border-bottom:1px solid var(--line);}
-    .analyze-row{flex-direction:column; align-items:flex-start;}
   }
 
   @media (prefers-reduced-motion: reduce){
-    .card{animation:none;}
-    .scan-line{display:none;}
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
   }
+
+  h1,h2,h3{font-family:"Noto Serif TC", serif; margin:0; letter-spacing:.01em}
+
+  .mono{font-family:"IBM Plex Mono", monospace}
+
+  .wrap{width:min(1080px, calc(100% - 40px)); margin:0 auto}
+
+  a{color:inherit}
+  button{font:inherit}
+
+  /* ---- NAV ---- */
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 0;
+  }
+  .brand{display:flex; align-items:center; gap:10px}
+  .brand-mark{
+    width:34px; height:34px; border-radius:9px;
+    background:linear-gradient(135deg, var(--coral) 0 55%, var(--violet) 55% 100%);
+    flex:0 0 auto;
+  }
+  .brand-name{font-weight:700; font-size:15px}
+  .nav-eyebrow{
+    font-family:"Noto Serif TC", serif; font-style:italic; color:var(--ink-soft); font-size:14px;
+  }
+
+  /* ---- HERO ---- */
+  .hero{padding:36px 0 54px; text-align:center}
+  .eyebrow{
+    display:inline-block; font-family:"Noto Serif TC", serif; font-style:italic;
+    color:var(--coral); font-size:16px; margin-bottom:14px;
+  }
+  .hero h1{
+    font-size:clamp(30px, 5.2vw, 54px); font-weight:900; line-height:1.15;
+  }
+  .hero p{
+    max-width:560px; margin:18px auto 0; color:var(--ink-soft); font-size:16px;
+  }
+  .hero-cta{
+    display:inline-flex; align-items:center; gap:8px;
+    margin-top:26px; padding:13px 24px; border-radius:999px;
+    background:var(--ink); color:#fff; text-decoration:none; font-weight:700; font-size:15px;
+    border:none; cursor:pointer;
+  }
+  .hero-cta:hover{background:var(--coral)}
+
+  /* ---- HERO DIAGRAM (two encoders converging into one similarity score) ---- */
+  .flow-dual{
+    margin-top:52px; display:flex; flex-direction:column; align-items:center; gap:12px;
+  }
+  .flow-row{display:flex; align-items:center; gap:10px; justify-content:center; flex-wrap:wrap}
+  .flow-node{
+    background:var(--card); border:1px solid var(--paper-line); border-radius:14px;
+    padding:14px 16px; box-shadow:var(--shadow); min-width:120px; text-align:center;
+  }
+  .flow-node .icon{font-size:24px; display:block; margin-bottom:6px}
+  .flow-node .label{font-size:12px; color:var(--ink-soft); font-weight:500}
+  .flow-arrow{color:var(--paper-line); font-size:22px}
+  .flow-arrow.down{font-size:16px; letter-spacing:8px}
+  .flow-node.brain{background:var(--ink); color:#fff; min-width:260px}
+  .flow-node.brain .label{color:#C9D2EA}
+
+  @media (max-width:640px){
+    .flow-row{flex-direction:column; gap:8px}
+    .flow-row .flow-arrow{transform:rotate(90deg)}
+  }
+
+  /* ---- STEP SECTIONS ---- */
+  .step{padding:56px 0; border-top:1px solid var(--paper-line)}
+  .step-head{display:flex; align-items:baseline; gap:14px; margin-bottom:22px}
+  .step-num{
+    font-family:"IBM Plex Mono", monospace; font-weight:600; font-size:14px;
+    color:var(--coral); border:1px solid var(--coral-soft); background:var(--coral-soft);
+    padding:3px 9px; border-radius:7px;
+  }
+  .step-head h2{font-size:clamp(22px, 3.2vw, 30px); font-weight:700}
+  .step-body{display:grid; grid-template-columns:1.05fr .95fr; gap:34px; align-items:center}
+  .step-body.reverse{grid-template-columns:.95fr 1.05fr}
+  .step-body.reverse .step-visual{order:-1}
+  @media (max-width:820px){
+    .step-body, .step-body.reverse{grid-template-columns:1fr}
+    .step-body.reverse .step-visual{order:0}
+  }
+  .step-text p{color:var(--ink-soft); font-size:15.5px}
+  .step-text .note{
+    margin-top:14px; font-size:13px; color:var(--ink-soft);
+    border-left:3px solid var(--paper-line); padding-left:10px;
+  }
+
+  .step-visual{
+    background:var(--card); border:1px solid var(--paper-line); border-radius:16px;
+    box-shadow:var(--shadow); padding:20px; min-height:220px;
+  }
+
+  /* step1 patch grid illustration */
+  .patch-demo{position:relative; border-radius:10px; overflow:hidden}
+  .patch-photo{
+    width:100%; aspect-ratio:4/3; object-fit:cover; display:block; border-radius:10px;
+  }
+  .patch-grid{position:absolute; inset:0; display:grid; grid-template-columns:repeat(6,1fr); grid-template-rows:repeat(4,1fr)}
+  .patch-cell{
+    border:1px solid rgba(255,255,255,.55);
+    opacity:0; transform:scale(.6);
+    transition:opacity .45s ease, transform .45s ease;
+  }
+  .patch-grid.revealed .patch-cell{opacity:1; transform:scale(1)}
+  .patch-cell.tagged{
+    display:flex; align-items:flex-end; justify-content:flex-start; padding:3px;
+    background:rgba(19,27,52,.28);
+  }
+  .patch-cell.tagged span{
+    font-family:"IBM Plex Mono", monospace; font-size:9px; color:#fff;
+    background:rgba(19,27,52,.65); padding:1px 4px; border-radius:4px;
+  }
+
+  /* step2 tokenizer demo */
+  .tok-input{
+    width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--paper-line);
+    font-family:"Noto Sans TC", sans-serif; font-size:15px; background:var(--paper);
+  }
+  .tok-input:focus{outline:2px solid var(--violet); outline-offset:1px}
+  .chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; min-height:34px}
+  .chip{
+    font-family:"IBM Plex Mono", monospace; font-size:13px; padding:5px 10px;
+    border-radius:8px; background:var(--violet-soft); color:#3f2fae; border:1px solid #d6cffb;
+    transition:opacity .3s ease, transform .3s ease;
+  }
+  .chip.image{background:var(--coral-soft); color:#a13a1f; border-color:#ffcbba}
+  .chip.pop{animation:popIn .3s ease both}
+
+  @keyframes popIn{
+    0%{ opacity:0; transform:translateY(6px) scale(.85); }
+    100%{ opacity:1; transform:translateY(0) scale(1); }
+  }
+
+  /* step3 diagram — a slow looping animation so the flow reads as motion, not a static poster */
+  .merge-diagram{display:flex; flex-direction:column; align-items:center; gap:10px}
+  .merge-row{display:flex; gap:6px; flex-wrap:wrap; justify-content:center}
+  .merge-row .chip{animation:driftIn 2.8s ease-in-out infinite}
+  .merge-row .chip:nth-child(2){animation-delay:.25s}
+  .merge-row .chip:nth-child(3){animation-delay:.5s}
+  .merge-row .chip:nth-child(4){animation-delay:.75s}
+  .merge-row .chip:nth-child(5){animation-delay:1s}
+  .merge-row .chip:nth-child(6){animation-delay:1.25s}
+  .merge-arrow-down{font-size:20px; color:var(--paper-line)}
+  .merge-brain{
+    background:var(--ink); color:#fff; padding:14px 22px; border-radius:12px;
+    font-family:"Noto Serif TC", serif; font-weight:700;
+    animation:pulseBrain 2.4s ease-in-out infinite;
+  }
+  .merge-brain.thinking{animation:pulseBrain 1s ease-in-out infinite}
+  .merge-out{
+    background:var(--mint-soft); color:#0b6e4d; padding:10px 18px; border-radius:10px;
+    font-size:14px; font-weight:500;
+    animation:driftIn 2.8s ease-in-out infinite; animation-delay:1.4s;
+  }
+
+  @keyframes driftIn{
+    0%,100%{ transform:translateY(4px); opacity:.55; }
+    50%{ transform:translateY(0); opacity:1; }
+  }
+  @keyframes pulseBrain{
+    0%,100%{ box-shadow:0 0 0 0 rgba(255,93,58,.32); }
+    50%{ box-shadow:0 0 0 9px rgba(255,93,58,0); }
+  }
+  @keyframes fadeInUp{
+    0%{ opacity:0; transform:translateY(10px); }
+    100%{ opacity:1; transform:translateY(0); }
+  }
+
+  /* ---- Batch contrastive-training diagram (reproduces the CLIP paper figure) ---- */
+  .batch-section{margin-top:44px; padding-top:36px; border-top:1px dashed var(--paper-line)}
+  .batch-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+  .batch-head h3{font-size:19px; font-weight:700}
+  .replay-btn{
+    margin-left:auto; padding:6px 14px; border-radius:999px; border:1px solid #d6cffb;
+    background:var(--violet-soft); color:#3f2fae; font-size:12px; font-weight:700; cursor:pointer;
+  }
+  .replay-btn:hover{background:#e0dafc}
+
+  .batch-diagram{
+    background:var(--card); border:1px solid var(--paper-line); border-radius:16px;
+    box-shadow:var(--shadow); padding:22px; overflow-x:auto;
+  }
+  .batch-flow{display:flex; align-items:center; gap:12px; flex-wrap:nowrap; margin-bottom:16px; min-width:max-content;
+    opacity:0; transform:translateX(-10px); transition:opacity .5s ease, transform .5s ease;
+  }
+  .batch-diagram.revealed .batch-flow-text{opacity:1; transform:none}
+  .batch-diagram.revealed .batch-flow-image{opacity:1; transform:none; transition-delay:.15s}
+  .batch-arrow-h{color:var(--paper-line); font-size:20px; flex:0 0 auto}
+
+  .batch-stack{position:relative; width:104px; height:56px; flex:0 0 auto}
+  .batch-stack .card{
+    position:absolute; inset:0; border-radius:8px; border:1px solid rgba(255,255,255,.4);
+    box-shadow:0 4px 10px rgba(19,27,52,.10);
+  }
+  .batch-stack.text .card{background:var(--violet)}
+  .batch-stack.text .card:nth-child(1){transform:translate(7px,7px)}
+  .batch-stack.text .card:nth-child(2){transform:translate(3.5px,3.5px)}
+  .batch-stack.text .card:nth-child(3){
+    z-index:2; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:11px; font-weight:600; text-align:center; line-height:1.35; padding:4px;
+  }
+  .batch-stack.image .card:nth-child(1){transform:translate(7px,7px); background:var(--mint)}
+  .batch-stack.image .card:nth-child(2){transform:translate(3.5px,3.5px); background:var(--mint)}
+  .batch-stack.image .card:nth-child(3){z-index:2; overflow:hidden; padding:0}
+  .batch-stack.image .card:nth-child(3) img{width:100%; height:100%; object-fit:cover; display:block}
+
+  .batch-encoder{
+    clip-path:polygon(16% 0%, 84% 0%, 100% 100%, 0% 100%);
+    width:104px; height:64px; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:12px; font-weight:700; text-align:center; line-height:1.3;
+  }
+  .batch-encoder.text-encoder{background:var(--violet)}
+  .batch-encoder.image-encoder{background:var(--mint)}
+
+  .vector-chips{display:flex; gap:6px; flex-wrap:nowrap}
+  .vchip{
+    font-family:"IBM Plex Mono", monospace; font-size:13px; padding:9px 4px; border-radius:8px;
+    width:56px; text-align:center; flex:0 0 auto;
+    opacity:0; transform:translateY(8px); transition:opacity .4s ease, transform .4s ease;
+  }
+  .vchip.t{background:var(--violet-soft); color:#3f2fae; border:1px solid #d6cffb}
+  .vchip.i{background:var(--mint-soft); color:#0b6e4d; border:1px solid #b8e6d1}
+  .batch-diagram.revealed .vchip{opacity:1; transform:translateY(0)}
+
+  .batch-grid-wrap{margin-top:6px}
+  .batch-grid{display:grid; grid-template-columns:56px repeat(5, 56px); gap:4px; width:max-content}
+  .bg-cell{
+    min-height:40px; display:flex; align-items:center; justify-content:center;
+    font-family:"IBM Plex Mono", monospace; font-size:10.5px; border-radius:6px;
+    background:var(--paper); border:1px solid var(--paper-line); color:var(--ink-soft);
+    opacity:0; transform:scale(.8); transition:opacity .3s ease, transform .3s ease;
+  }
+  .batch-diagram.revealed .bg-cell{opacity:1; transform:scale(1)}
+  .bg-cell.header{background:transparent; border:none; font-weight:700; font-size:13px}
+  .bg-cell.header.t{color:#3f2fae}
+  .bg-cell.header.i{color:#0b6e4d}
+  .bg-cell.diag{background:var(--mint-soft); border-color:#9adfc0; color:#0b6e4d; font-weight:700}
+  .bg-cell.diag.pulse{animation:pulseDiag 2.2s ease-in-out infinite}
+
+  .batch-caption{margin-top:16px; font-size:12.5px; color:var(--ink-soft); line-height:1.5}
+
+  @keyframes pulseDiag{
+    0%,100%{ box-shadow:0 0 0 0 rgba(23,166,115,.4); }
+    50%{ box-shadow:0 0 0 6px rgba(23,166,115,0); }
+  }
+
+  /* ---- STEP 4 DEMO ---- */
+  .demo{background:var(--card); border:1px solid var(--paper-line); border-radius:18px; box-shadow:var(--shadow); padding:28px}
+  .demo-grid{display:grid; grid-template-columns:1fr 1fr; gap:26px}
+  @media (max-width:820px){.demo-grid{grid-template-columns:1fr}}
+
+  .sample-row{display:flex; gap:10px; margin:10px 0 16px; flex-wrap:wrap}
+  .sample-btn{
+    border:1px solid var(--paper-line); background:var(--paper); border-radius:10px;
+    padding:6px; cursor:pointer; display:flex; align-items:center; gap:8px;
+  }
+  .sample-btn img{width:44px; height:44px; object-fit:cover; border-radius:6px; display:block}
+  .sample-btn span{font-size:12px; color:var(--ink-soft); padding-right:6px}
+  .sample-btn:hover{border-color:var(--coral)}
+
+  .drop-zone{
+    border:1.5px dashed var(--paper-line); border-radius:12px; padding:18px;
+    text-align:center; cursor:pointer; color:var(--ink-soft); font-size:13px;
+    transition:border-color .15s ease, background-color .15s ease;
+  }
+  .drop-zone:hover, .drop-zone.drag{border-color:var(--coral); background:var(--coral-soft)}
+  .drop-zone input{display:none}
+
+  .preview-box{
+    position:relative; border-radius:12px; overflow:hidden; background:var(--paper);
+    border:1px solid var(--paper-line); aspect-ratio:4/3; margin-top:14px;
+  }
+  .preview-box canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+  .preview-empty{
+    position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-soft); font-size:13px; text-align:center; padding:20px;
+  }
+
+  .process-panel{
+    margin-top:18px; display:none;
+    background:var(--paper); border:1px solid var(--paper-line);
+    border-radius:14px; padding:16px 18px 18px;
+  }
+  .process-label{
+    font-family:"IBM Plex Mono", monospace; font-size:11px; font-weight:600;
+    color:var(--ink-soft); letter-spacing:.08em; margin-bottom:16px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .process-label::before{
+    content:""; width:7px; height:7px; border-radius:50%;
+    background:var(--coral); box-shadow:0 0 0 3px var(--coral-soft);
+  }
+  .process-flow{
+    display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;
+    margin-top:18px; padding-top:16px; border-top:1px dashed var(--paper-line);
+  }
+  .process-flow .flow-compare-label{font-size:12px; color:var(--ink-soft)}
+  .process-flow .merge-brain{font-size:13px; padding:9px 18px; animation:none}
+  .process-flow .merge-brain.thinking-active{animation:pulseBrain 1s ease-in-out infinite}
+
+  /* 雙軌推理圖：圖片軌與文字軌的編碼器垂直對齊，每句話對到自己的 T 向量 */
+  .infer-diagram{display:flex; flex-direction:column; gap:16px}
+  .infer-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 26px 78px 26px 66px;
+    align-items:center; column-gap:6px;
+    opacity:0; transform:translateY(8px); transition:opacity .45s ease, transform .45s ease;
+  }
+  .infer-row.show{opacity:1; transform:none}
+  .infer-row .batch-arrow-h{justify-self:center; text-align:center; color:#98a3bd; font-size:17px}
+
+  #inferCaptionChips{display:flex; flex-direction:column; gap:10px; align-items:stretch; width:100%}
+  #inferTextVecs{display:flex; flex-direction:column; gap:10px; align-items:center; width:100%}
+  #inferCaptionChips .chip{
+    height:36px; margin:0; width:100%;
+    display:flex; align-items:center; justify-content:flex-start;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  #inferTextVecs .vchip{
+    height:36px; width:56px; padding:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .infer-photo{
+    width:52px; height:52px; border-radius:10px; overflow:hidden; flex:0 0 auto;
+    border:1px solid var(--paper-line); background:var(--paper);
+    box-shadow:0 3px 8px rgba(19,27,52,.10);
+    opacity:0; transform:scale(.75); transition:opacity .4s ease, transform .4s ease;
+  }
+  .infer-photo.show{opacity:1; transform:scale(1)}
+  .infer-photo img{width:100%; height:100%; object-fit:cover; display:block}
+
+  .infer-enc-wrap{
+    display:flex; flex-direction:column; align-items:center; gap:6px; justify-self:center;
+    opacity:0; transform:scale(.82); transition:opacity .4s ease, transform .4s ease;
+  }
+  .infer-enc-wrap.show{opacity:1; transform:scale(1)}
+  .infer-enc{
+    clip-path:polygon(12% 0%, 88% 0%, 100% 100%, 0% 100%);
+    width:60px; height:52px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; line-height:1;
+    box-shadow:0 6px 14px rgba(19,27,52,.16), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .infer-enc-label{
+    font-size:11px; font-weight:700; color:var(--ink-soft); white-space:nowrap;
+  }
+
+  .vchip.show{opacity:1; transform:translateY(0)}
+  .vchip.diag{background:var(--coral-soft); color:#a13a1f; border-color:#ffcbba; animation:pulseDiag2 1.4s ease-in-out infinite}
+  @keyframes pulseDiag2{
+    0%,100%{ box-shadow:0 0 0 0 rgba(255,93,58,.4); }
+    50%{ box-shadow:0 0 0 6px rgba(255,93,58,0); }
+  }
+
+  .infer-cap-chip{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+  .question-input{
+    width:100%; margin-top:16px; padding:12px 14px; border-radius:10px; border:1px solid var(--paper-line);
+    font-size:15px; font-family:"Noto Sans TC", sans-serif; background:var(--paper);
+  }
+  .run-btn{
+    margin-top:14px; width:100%; padding:13px; border-radius:10px; border:none;
+    background:var(--coral); color:#fff; font-weight:700; font-size:15px; cursor:pointer;
+  }
+  .run-btn:hover{background:#e8501f}
+  .run-btn:disabled{background:#c9b6ae; cursor:not-allowed}
+
+  .stage-strip{display:flex; gap:6px; margin-top:16px}
+  .stage-pill{
+    flex:1; text-align:center; font-size:11px; padding:7px 4px; border-radius:8px;
+    background:var(--paper); border:1px solid var(--paper-line); color:var(--ink-soft);
+  }
+  .stage-pill.active{background:var(--ink); color:#fff; border-color:var(--ink)}
+
+  /* ---- RESULT: 排行榜 ---- */
+  .result-card{
+    margin-top:20px;
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:16px;
+    padding:18px 18px 16px;
+    box-shadow:var(--shadow);
+  }
+  .result-header{
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:16px; padding-bottom:14px;
+    border-bottom:1px solid var(--paper-line);
+  }
+  .result-badge{
+    font-family:"IBM Plex Mono", monospace; font-size:11px; font-weight:600;
+    color:var(--coral); background:var(--coral-soft);
+    padding:4px 10px; border-radius:999px; letter-spacing:.08em; flex:0 0 auto;
+  }
+  .result-header h4{
+    font-family:"Noto Serif TC", serif; font-size:16px; font-weight:700; margin:0;
+  }
+
+  #matchList{display:flex; flex-direction:column; gap:12px}
+
+  .match-card{
+    position:relative;
+    display:grid; grid-template-columns:auto 1fr; column-gap:14px; align-items:center;
+    background:var(--paper); border:1px solid var(--paper-line);
+    border-radius:14px; padding:14px 16px;
+    animation:matchIn .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes matchIn{
+    0%{ opacity:0; transform:translateY(10px) }
+    100%{ opacity:1; transform:translateY(0) }
+  }
+
+  .match-rank{
+    grid-row:1 / span 2;
+    width:38px; height:38px; border-radius:12px; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    font-family:"IBM Plex Mono", monospace; font-size:15px; font-weight:700;
+    color:var(--ink-soft); background:var(--card);
+    border:1px solid var(--paper-line);
+  }
+
+  .match-head{
+    display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    margin-bottom:9px;
+  }
+  .match-label-wrap{display:flex; align-items:center; gap:8px; min-width:0}
+  .match-text{
+    font-size:15px; font-weight:600; color:var(--ink);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .match-tag{
+    font-size:10.5px; font-weight:700; color:#fff; background:var(--coral);
+    padding:2px 8px; border-radius:999px; flex:0 0 auto; letter-spacing:.02em;
+    white-space:nowrap;
+  }
+  .match-pct{
+    font-family:"IBM Plex Mono", monospace; font-size:16px; font-weight:700;
+    color:var(--ink-soft); flex:0 0 auto;
+  }
+
+  .match-track{
+    grid-column:2;
+    height:10px; border-radius:999px; background:#fff;
+    border:1px solid var(--paper-line); overflow:hidden;
+  }
+  .match-fill{
+    height:100%; border-radius:999px; width:0%;
+    background:linear-gradient(90deg, #b7c1d8, #96a2bd);
+    transition:width .9s cubic-bezier(.2,.85,.25,1);
+  }
+
+  /* 冠軍卡片 */
+  .match-card.top{
+    background:
+      radial-gradient(135% 135% at 0% 0%, var(--coral-soft) 0%, rgba(255,227,218,0) 62%),
+      var(--card);
+    border-color:#ffc9b8;
+    box-shadow:0 10px 26px rgba(255,93,58,.15);
+  }
+  .match-card.top .match-rank{
+    background:linear-gradient(140deg, var(--coral), #ff8a68);
+    color:#fff; border-color:transparent; font-size:19px;
+    box-shadow:0 6px 14px rgba(255,93,58,.3);
+  }
+  .match-card.top .match-text{color:#9c3419}
+  .match-card.top .match-pct{color:var(--coral); font-size:20px}
+  .match-card.top .match-track{border-color:#ffcaba}
+  .match-card.top .match-fill{background:linear-gradient(90deg, var(--coral), #ff9a6d)}
+
+  .result-source{
+    font-size:12px; color:var(--ink-soft); margin-top:16px; padding-top:12px;
+    border-top:1px dashed var(--paper-line);
+    display:flex; align-items:flex-start; gap:7px;
+  }
+  .result-source::before{content:"✓"; color:var(--mint); font-weight:700; flex:0 0 auto}
+
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; padding:10px 18px; border-radius:999px; font-size:13px;
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:20;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  footer{padding:40px 0 60px; text-align:center; color:var(--ink-soft); font-size:13px}
+  footer a{color:var(--coral); text-decoration:underline}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <header>
-    <div class="eyebrow">Field Notebook · No. 01</div>
-    <h1>色彩採集<br><em>Color Hunting</em></h1>
-    <p class="sub">上傳多張照片，選擇量測方式後按下「開始分析」，逐一測出每張照片的代表色，最後調和成一份綜合色。</p>
-  </header>
-
-  <div class="mode-row">
-    <div class="mode-switch">
-      <button class="mode-btn active" id="modeAvgBtn" data-mode="average">平均色 Average</button>
-      <button class="mode-btn" id="modeDomBtn" data-mode="dominant">主色聚類 Clustering</button>
-    </div>
-    <div class="mode-hint" id="modeHint">將照片所有像素直接取平均值，容易被大面積的天空或牆面拉走顏色。</div>
+<div class="wrap nav">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div class="brand-name">CLIP 好好懂</div>
   </div>
-
-  <div class="tray">
-    <div class="tray-swatch" id="traySwatch" style="background:#2a2a2e;"></div>
-    <div class="tray-info">
-      <div class="tray-label" id="trayLabel">調和色 / Mixed Average</div>
-      <div class="tray-hex" id="trayHex">— — —</div>
-      <div class="tray-rgb" id="trayRgb">rgb( — , — , — )</div>
-      <div class="tray-count" id="trayCount">尚未採集任何標本</div>
-    </div>
-    <div class="tray-progress" id="trayProgress"></div>
-  </div>
-
-  <label class="drop" id="dropZone" for="fileInput">
-    <div class="drop-title">拖曳照片到這裡，或點擊選取</div>
-    <div class="drop-sub">支援多張選取 · JPG / PNG / WEBP</div>
-    <input type="file" id="fileInput" accept="image/*" multiple>
-  </label>
-
-  <div class="analyze-row">
-    <button class="analyze-btn" id="analyzeBtn" disabled>開始分析</button>
-    <div class="analyze-note" id="analyzeNote">請先上傳照片</div>
-  </div>
-
-  <div class="section-head">
-    <div class="section-title" id="specimenCount">標本 Specimens (0)</div>
-    <button class="clear-btn" id="clearBtn">清空全部</button>
-  </div>
-
-  <div class="grid" id="grid">
-    <div class="empty-note" id="emptyNote">— 空的抽屜，等待第一份標本 —</div>
-  </div>
-
-  <footer>每張照片皆在瀏覽器本機端計算，不會上傳到任何伺服器。主色聚類使用簡化版 k-means（k=5）。</footer>
+  <div class="nav-eyebrow">給高中生的「文字—圖片配對」AI 導覽</div>
 </div>
 
-<canvas id="workCanvas" width="44" height="44" style="display:none;"></canvas>
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow">一堂關於「AI 怎麼幫文字跟圖片配對」的課</span>
+    <h1>一句話跟一張照片，<br>AI 怎麼知道搭不搭？</h1>
+    <p>這種 AI 叫 CLIP，是很多視覺 AI 的基礎款。它不回答問題，只做一件事：把照片和文字分別變成一串數字，量出兩者有多接近。往下滑，四步拆解它的原理，最後自己上傳照片、打幾句話，看真正的模型怎麼打分數。</p>
+    <a href="#demo" class="hero-cta">直接玩玩看 ↓</a>
 
-<script>
-const fileInput = document.getElementById('fileInput');
-const dropZone = document.getElementById('dropZone');
-const grid = document.getElementById('grid');
-const specimenCount = document.getElementById('specimenCount');
-const clearBtn = document.getElementById('clearBtn');
-const traySwatch = document.getElementById('traySwatch');
-const trayLabel = document.getElementById('trayLabel');
-const trayHex = document.getElementById('trayHex');
-const trayRgb = document.getElementById('trayRgb');
-const trayCount = document.getElementById('trayCount');
-const trayProgress = document.getElementById('trayProgress');
-const analyzeBtn = document.getElementById('analyzeBtn');
-const analyzeNote = document.getElementById('analyzeNote');
-const modeAvgBtn = document.getElementById('modeAvgBtn');
-const modeDomBtn = document.getElementById('modeDomBtn');
-const modeHint = document.getElementById('modeHint');
-const canvas = document.getElementById('workCanvas');
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    <div class="flow-dual" aria-hidden="true">
+      <div class="flow-row">
+        <div class="flow-node"><span class="icon">🖼️</span><span class="label">一張照片</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node"><span class="icon">🔢</span><span class="label">圖片向量</span></div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-node"><span class="icon">💬</span><span class="label">一句文字描述</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node"><span class="icon">🔤</span><span class="label">文字向量</span></div>
+      </div>
+      <div class="flow-arrow down">↓ ↓</div>
+      <div class="flow-node brain"><span class="icon">🎯</span><span class="label">兩個向量有多接近＝相似度分數</span></div>
+    </div>
+  </div>
+</section>
 
-const SAMPLE_SIZE = 44; // downsample resolution per photo (44x44 = 1936 px)
-const K = 5;             // number of clusters for dominant-color mode
-const ITER = 6;           // k-means iterations
-
-let mode = 'average'; // 'average' | 'dominant'
-let specimens = []; // {id, name, url, pixels:[[r,g,b],...], avg:{r,g,b,hex}, dom:{r,g,b,hex,share}, analyzed, tilt}
-let idSeq = 0;
-let isAnimating = false;
-
-function toHex(n){ return Math.max(0,Math.min(255,Math.round(n))).toString(16).padStart(2,'0'); }
-function rgbToHex(r,g,b){ return '#' + toHex(r) + toHex(g) + toHex(b); }
-function randHexChar(){ return '0123456789abcdef'[Math.floor(Math.random()*16)]; }
-function sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
-
-function extractPixels(img){
-  const size = SAMPLE_SIZE;
-  canvas.width = size; canvas.height = size;
-  ctx.clearRect(0,0,size,size);
-  ctx.drawImage(img, 0, 0, size, size);
-  const data = ctx.getImageData(0,0,size,size).data;
-  const pixels = [];
-  for(let i=0; i<data.length; i+=4){
-    if(data[i+3] < 10) continue; // skip transparent
-    pixels.push([data[i], data[i+1], data[i+2]]);
-  }
-  return pixels.length ? pixels : [[0,0,0]];
-}
-
-function averageOf(pixels){
-  let r=0,g=0,b=0;
-  for(const p of pixels){ r+=p[0]; g+=p[1]; b+=p[2]; }
-  const n = pixels.length;
-  const rr = r/n, gg = g/n, bb = b/n;
-  return { r: Math.round(rr), g: Math.round(gg), b: Math.round(bb), hex: rgbToHex(rr,gg,bb) };
-}
-
-// simplified k-means: returns the centroid of the largest cluster + its share
-function dominantOf(pixels, k=K, iterations=ITER){
-  if(pixels.length <= k){
-    const avg = averageOf(pixels);
-    return { r: avg.r, g: avg.g, b: avg.b, hex: avg.hex, share: 1 };
-  }
-  // k-means++ style init: first centroid random, rest chosen far from existing ones
-  let centroids = [pixels[Math.floor(Math.random()*pixels.length)].slice()];
-  while(centroids.length < k){
-    let bestPixel = null, bestDist = -1;
-    const tries = Math.min(pixels.length, 300);
-    for(let t=0; t<tries; t++){
-      const p = pixels[Math.floor(Math.random()*pixels.length)];
-      let minD = Infinity;
-      for(const c of centroids){
-        const dr=p[0]-c[0], dg=p[1]-c[1], db=p[2]-c[2];
-        const d = dr*dr+dg*dg+db*db;
-        if(d < minD) minD = d;
-      }
-      if(minD > bestDist){ bestDist = minD; bestPixel = p; }
-    }
-    centroids.push(bestPixel.slice());
-  }
-
-  let assignments = new Array(pixels.length).fill(0);
-  for(let it=0; it<iterations; it++){
-    for(let i=0;i<pixels.length;i++){
-      let best=0, bestDist=Infinity;
-      const p = pixels[i];
-      for(let c=0;c<centroids.length;c++){
-        const cc = centroids[c];
-        const dr=p[0]-cc[0], dg=p[1]-cc[1], db=p[2]-cc[2];
-        const d = dr*dr+dg*dg+db*db;
-        if(d < bestDist){ bestDist=d; best=c; }
-      }
-      assignments[i] = best;
-    }
-    const sums = centroids.map(()=>[0,0,0,0]);
-    for(let i=0;i<pixels.length;i++){
-      const c = assignments[i];
-      sums[c][0]+=pixels[i][0]; sums[c][1]+=pixels[i][1]; sums[c][2]+=pixels[i][2]; sums[c][3]++;
-    }
-    for(let c=0;c<centroids.length;c++){
-      if(sums[c][3] > 0){
-        centroids[c] = [sums[c][0]/sums[c][3], sums[c][1]/sums[c][3], sums[c][2]/sums[c][3]];
-      }
-    }
-  }
-
-  const counts = new Array(centroids.length).fill(0);
-  for(const a of assignments) counts[a]++;
-  let bestC = 0;
-  for(let c=1;c<centroids.length;c++) if(counts[c] > counts[bestC]) bestC = c;
-  const col = centroids[bestC];
-  return {
-    r: Math.round(col[0]), g: Math.round(col[1]), b: Math.round(col[2]),
-    hex: rgbToHex(col[0], col[1], col[2]),
-    share: counts[bestC] / pixels.length
-  };
-}
-
-function currentColorOf(s){
-  return mode === 'average' ? s.avg : s.dom;
-}
-
-function handleFiles(fileList){
-  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const pixels = extractPixels(img);
-        const avg = averageOf(pixels);
-        const specimen = {
-          id: idSeq++,
-          name: file.name,
-          url: e.target.result,
-          pixels,
-          avg,
-          dom: null,
-          analyzed: false,
-          tilt: (Math.random()*4 - 2).toFixed(2)
-        };
-        specimens.push(specimen);
-        render();
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-function removeSpecimen(id){
-  specimens = specimens.filter(s => s.id !== id);
-  render();
-}
-
-function setMode(newMode){
-  if(mode === newMode || isAnimating) return;
-  mode = newMode;
-  modeAvgBtn.classList.toggle('active', mode === 'average');
-  modeDomBtn.classList.toggle('active', mode === 'dominant');
-  modeHint.textContent = mode === 'average'
-    ? '將照片所有像素直接取平均值，容易被大面積的天空或牆面拉走顏色。'
-    : '把像素分成 5 群（k-means 聚類），取數量最多的那一群當作代表色，較接近人眼認定的「主色」。';
-  trayLabel.textContent = mode === 'average' ? '調和色 / Mixed Average' : '主色 / Dominant Cluster';
-  // switching mode requires re-running the animation so results reflect the new method
-  specimens.forEach(s => { s.analyzed = false; });
-  render();
-}
-
-function render(){
-  grid.innerHTML = '';
-  if(specimens.length === 0){
-    const note = document.createElement('div');
-    note.className = 'empty-note';
-    note.textContent = '— 空的抽屜，等待第一份標本 —';
-    grid.appendChild(note);
-  } else {
-    specimens.forEach(s => {
-      const col = currentColorOf(s);
-      const card = document.createElement('div');
-      card.className = 'card' + (s.analyzed ? '' : ' pending');
-      card.dataset.id = s.id;
-      card.style.setProperty('--tilt', s.tilt + 'deg');
-      const shareLine = (mode === 'dominant' && s.analyzed && s.dom)
-        ? `<div class="card-share">占比 ${Math.round(s.dom.share*100)}%</div>` : '';
-      card.innerHTML = `
-        <div class="card-photo-wrap">
-          <img class="card-photo" src="${s.url}" alt="${s.name}">
-          <div class="scan-line"></div>
-          ${s.analyzed ? '' : '<div class="pending-tag">待分析</div>'}
+<section class="step" id="step1">
+  <div class="wrap">
+    <div class="step-head">
+      <span class="step-num">STEP 01</span>
+      <h2>照片在電腦眼中，其實是一堆數字</h2>
+    </div>
+    <div class="step-body">
+      <div class="step-text">
+        <p>你看到的是一隻貓，但電腦看不懂「貓」這個概念。它會先把整張照片切成一格一格的小方塊（叫做 <span class="mono">patch</span>），每一格都變成一串數字，用來描述這格裡的顏色、亮度、邊緣等資訊。</p>
+        <p>這串數字就是這一格的「向量」，可以想成是這格畫面的數字身份證。真正的模型裡，每格會有幾百到幾千個數字；下面只示範幾格，讓你抓到感覺。</p>
+        <p class="note">真實的模型還會考慮格子跟格子之間的關係（哪一格在哪一格旁邊），不是各自獨立計算。</p>
+      </div>
+      <div class="step-visual">
+        <div class="patch-demo">
+          <img class="patch-photo" src="https://upload.wikimedia.org/wikipedia/commons/7/74/A-Cat.jpg" alt="一隻貓的照片，示範圖片切格">
+          <div class="patch-grid" id="step1Grid"></div>
         </div>
-        <div class="card-tag">
-          <div class="card-swatch" style="background:${s.analyzed ? col.hex : '#d8d3c6'};"></div>
-          <div class="card-text">
-            <div class="card-hex">${s.analyzed ? col.hex.toUpperCase() : '------'}</div>
-            ${shareLine}
-            <div class="card-name" title="${s.name}">${s.name}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="step2">
+  <div class="wrap">
+    <div class="step-head">
+      <span class="step-num">STEP 02</span>
+      <h2>你打的文字，也會被切成一塊一塊</h2>
+    </div>
+    <div class="step-body reverse">
+      <div class="step-text">
+        <p>照片變成一格一格，文字也一樣：模型會把你打的句子切成一小塊一小塊，叫做 <span class="mono">token</span>（詞元）。每個 token 也會變成一串數字，跟照片的每一格用「同一種數字語言」表示。</p>
+        <p>下面這個小工具是真的在你瀏覽器裡跑的斷詞示範——自己打打看！</p>
+        <p class="note">這是簡化版斷詞（大致依標點符號、英數字、中文字切開），真正的模型用的演算法更精細，但概念一樣：把整段話拆成一小塊一小塊。</p>
+      </div>
+      <div class="step-visual">
+        <input class="tok-input" id="tokenizerInput" placeholder="打字看看，例如：一隻貓咪坐在鏡頭前" value="一隻貓咪坐在鏡頭前">
+        <div class="chip-row" id="tokenChips"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="step3">
+  <div class="wrap">
+    <div class="step-head">
+      <span class="step-num">STEP 03</span>
+      <h2>圖片向量和文字向量，比「距離」有多近</h2>
+    </div>
+    <div class="step-body">
+      <div class="step-text">
+        <p>這裡是 CLIP 這種模型的關鍵：圖片和文字<strong>不會</strong>被丟進同一個網路一起處理。它們分別走進兩條獨立的路——「圖片編碼器」把所有圖片格子壓縮成一串固定長度的數字（圖片向量），「文字編碼器」把所有文字 token 壓縮成另一串一樣長度的數字（文字向量）。</p>
+        <p>訓練的時候，CLIP 看了幾億組「這張圖配這句話」的正確配對，學會讓<strong>搭配的圖片和文字，向量落在數字空間裡很接近的位置</strong>；不搭的，向量就離得遠。之後只要算兩個向量的「距離」（術語叫 cosine similarity），就能得到一個 0~100% 的相似度分數。</p>
+        <p class="note">這跟 ChatGPT / Claude 這種會「回答問題」的 AI 不一樣——CLIP 不生成句子，它只負責打分數：這段文字跟這張圖，搭不搭。</p>
+      </div>
+      <div class="step-visual">
+        <div class="merge-diagram">
+          <div class="merge-row">
+            <span class="chip image">🖼️ 0.42</span><span class="chip image">🖼️ 0.71</span><span class="chip image">🖼️ 0.18</span>
+            <span class="chip">🖼️ …</span>
+          </div>
+          <div class="merge-arrow-down">↓ 圖片編碼器 ↓</div>
+          <div class="merge-out" style="animation-delay:0s">圖片向量 [0.31, 0.88, …]</div>
+          <div class="merge-row" style="margin-top:6px">
+            <span class="chip">一隻</span><span class="chip">貓</span><span class="chip">坐</span><span class="chip">在</span><span class="chip">鏡頭前</span>
+          </div>
+          <div class="merge-arrow-down">↓ 文字編碼器 ↓</div>
+          <div class="merge-out" style="animation-delay:.6s">文字向量 [0.29, 0.85, …]</div>
+          <div class="merge-arrow-down">↓ ↓</div>
+          <div class="merge-brain">相似度 92%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="batch-section">
+      <div class="batch-head">
+        <span class="step-num" style="background:var(--violet-soft); border-color:#d6cffb; color:#3f2fae">訓練時</span>
+        <h3>CLIP 真正的訓練方式：一次看一整批圖片和文字</h3>
+        <button type="button" id="replayBatchBtn" class="replay-btn">▶ 重播動畫</button>
+      </div>
+      <p style="color:var(--ink-soft); font-size:14.5px; margin:6px 0 20px">上面是「用好了的 CLIP」在打分數。但訓練的時候，CLIP 一次會看一整批（例如 N 組）圖片和文字，把它們兩兩配對、算出一整張表，再用這張表去調整自己——這張圖是 CLIP 論文原始的示意圖，滑到這裡會自動播放一次，也可以按右上角重播。</p>
+
+      <div class="batch-diagram" id="batchDiagram">
+        <div class="batch-flow batch-flow-text">
+          <div class="batch-stack text">
+            <div class="card"></div>
+            <div class="card"></div>
+            <div class="card">一隻可愛<br>的貓咪</div>
+          </div>
+          <div class="batch-arrow-h">→</div>
+          <div class="batch-encoder text-encoder">文字<br>編碼器</div>
+          <div class="batch-arrow-h">→</div>
+          <div class="vector-chips" id="tChips"></div>
+        </div>
+        <div class="batch-flow batch-flow-image">
+          <div class="batch-stack image">
+            <div class="card"></div>
+            <div class="card"></div>
+            <div class="card"><img src="https://upload.wikimedia.org/wikipedia/commons/7/74/A-Cat.jpg" alt="範例照片"></div>
+          </div>
+          <div class="batch-arrow-h">→</div>
+          <div class="batch-encoder image-encoder">圖片<br>編碼器</div>
+          <div class="batch-arrow-h">→</div>
+          <div class="vector-chips" id="iChips"></div>
+        </div>
+
+        <div class="batch-grid-wrap">
+          <div class="batch-grid" id="batchGrid"></div>
+        </div>
+        <div class="batch-caption">淺綠色的對角線＝同一組的圖片配文字（正確答案），訓練時把它們的向量拉近；其他每一格都是刻意配錯的組合，訓練時把它們的向量推遠。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="step demo-section" id="step4">
+  <div class="wrap">
+    <div class="step-head">
+      <span class="step-num">STEP 04</span>
+      <h2>換你了：上傳照片、打幾句話，看真正的 CLIP 怎麼打分數</h2>
+    </div>
+    <p style="color:var(--ink-soft); font-size:15px; margin:-6px 0 22px">下面會真的呼叫 CLIP 模型——不是本頁自己算出來的假分數。你打的每一句話，都會各自跟照片算一次相似度，最後照分數高低排名。這個模型直接在你的瀏覽器裡跑，不用申請帳號、不用金鑰。</p>
+
+    <div class="demo" id="demo">
+      <div class="api-key-row" id="modelStatusRow" style="margin-bottom:20px; padding:14px; background:var(--paper); border:1px solid var(--paper-line); border-radius:10px">
+        <div style="font-size:13px; font-weight:700; margin-bottom:4px" id="modelStatusTitle">⏳ 模型準備中…</div>
+        <div style="font-size:12px; color:var(--ink-soft)" id="modelStatusDetail">
+          第一次使用需要下載 CLIP 模型（約幾十 MB），瀏覽器會快取起來，之後開這個頁面就不用再等了。全程不會把你的照片傳到任何伺服器。
+        </div>
+      </div>
+      <div class="demo-grid">
+        <div>
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px">1. 選一張照片</div>
+          <div class="sample-row">
+            <button class="sample-btn" data-sample="cat">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/74/A-Cat.jpg" alt="貓範例">
+              <span>貓咪範例</span>
+            </button>
+            <button class="sample-btn" data-sample="coast">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/7c/A_scenic_view_of_the_oregon_coast.jpg" alt="海岸範例">
+              <span>海岸範例</span>
+            </button>
+          </div>
+          <div class="drop-zone" id="dropZone">
+            📷 點這裡上傳你自己的照片，或把照片拖進來
+            <input type="file" id="fileInput" accept="image/*">
+          </div>
+          <div class="preview-box">
+            <canvas id="previewCanvas" width="640" height="480"></canvas>
+            <div class="preview-empty" id="previewEmpty">選一張範例照片，或上傳你自己的照片</div>
           </div>
         </div>
-        <button class="card-remove" title="移除">×</button>
-      `;
-      card.querySelector('.card-remove').addEventListener('click', () => removeSpecimen(s.id));
-      grid.appendChild(card);
+
+        <div>
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px">2. 打幾句話，一行一句</div>
+          <textarea class="question-input" id="candidateInput" rows="4" style="resize:vertical; font-family:inherit">一隻貓咪坐在鏡頭前
+一片海邊的風景
+一輛紅色的跑車</textarea>
+          <button class="run-btn" id="runBtn">算相似度 →</button>
+
+          <div class="stage-strip" aria-hidden="true">
+            <div class="stage-pill" data-stage="0">讀取圖片</div>
+            <div class="stage-pill" data-stage="1">送進編碼器</div>
+            <div class="stage-pill" data-stage="2">算出分數</div>
+          </div>
+
+          <div class="process-panel" id="processPanel">
+            <div class="process-label">運算過程</div>
+            <div class="infer-diagram">
+              <div class="infer-row" id="inferImageRow">
+                <div class="infer-photo" id="inferPhoto"></div>
+                <span class="batch-arrow-h">→</span>
+                <div class="infer-enc-wrap" id="inferImageEncWrap">
+                  <div class="batch-encoder image-encoder infer-enc">🖼️</div>
+                  <div class="infer-enc-label">圖片編碼器</div>
+                </div>
+                <span class="batch-arrow-h">→</span>
+                <span class="vchip i" id="inferImgVec">I</span>
+              </div>
+              <div class="infer-row" id="inferTextRow">
+                <div class="vector-chips" id="inferCaptionChips"></div>
+                <span class="batch-arrow-h">→</span>
+                <div class="infer-enc-wrap" id="inferTextEncWrap">
+                  <div class="batch-encoder text-encoder infer-enc">🔤</div>
+                  <div class="infer-enc-label">文字編碼器</div>
+                </div>
+                <span class="batch-arrow-h">→</span>
+                <div class="vector-chips" id="inferTextVecs"></div>
+              </div>
+            </div>
+            <div class="process-flow">
+              <span class="flow-compare-label">比對 I 跟每個 T 的距離</span>
+              <span class="merge-arrow-down">→</span>
+              <div class="merge-brain" id="demoBrain">等待中…</div>
+            </div>
+          </div>
+
+          <div class="result-card" id="resultCard" style="display:none">
+            <div class="result-header">
+              <span class="result-badge">RANK</span>
+              <h4>依相似度排名</h4>
+            </div>
+            <div id="matchList"></div>
+            <div class="result-source" id="resultSource"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    這個頁面第 4 步跑的是真正的 CLIP 模型（Xenova/clip-vit-base-patch32，透過 transformers.js 直接在你的瀏覽器裡執行），分數是模型自己算出來的相似度，不是預先寫好的劇本。不用申請帳號、不用金鑰，第一次使用會下載模型檔案，之後瀏覽器會快取起來。<br>
+    範例照片來自 <a href="https://commons.wikimedia.org/wiki/File:A-Cat.jpg" target="_blank" rel="noopener">Wikimedia Commons（貓咪，CC BY-SA 3.0，攝影 Florinux）</a> 與
+    <a href="https://commons.wikimedia.org/wiki/Category:Public-domain-image.com" target="_blank" rel="noopener">Wikimedia Commons（海岸，公有領域）</a>。
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  // 在瀏覽器裡直接跑 CLIP，不用任何 API 或金鑰（Hugging Face 的 transformers.js）。
+  import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
+
+  const statusTitle = document.getElementById('modelStatusTitle');
+  const statusDetail = document.getElementById('modelStatusDetail');
+
+  window.clipClassifierPromise = pipeline('zero-shot-image-classification', 'Xenova/clip-vit-base-patch32', {
+    progress_callback: (p) => {
+      if(p && p.status === 'progress' && typeof p.progress === 'number'){
+        statusTitle.textContent = `⏳ 模型下載中… ${Math.round(p.progress)}%`;
+      }
+    }
+  }).then((classifier) => {
+    statusTitle.textContent = '✅ 模型已就緒，可以開始了';
+    statusDetail.textContent = '這個 CLIP 模型已經在你的瀏覽器裡跑起來了，接下來的計算都在本機完成，不會連到任何伺服器。';
+    return classifier;
+  }).catch((err) => {
+    console.error('CLIP 模型載入失敗', err);
+    statusTitle.textContent = '⚠️ 模型載入失敗';
+    statusDetail.textContent = '請確認網路連線後重新整理頁面再試一次。（詳細錯誤請看瀏覽器 Console）';
+    throw err;
+  });
+</script>
+
+<script>
+(() => {
+  const el = {
+    step1Grid: document.getElementById("step1Grid"),
+    tokenizerInput: document.getElementById("tokenizerInput"),
+    tokenChips: document.getElementById("tokenChips"),
+    sampleBtns: document.querySelectorAll(".sample-btn"),
+    dropZone: document.getElementById("dropZone"),
+    fileInput: document.getElementById("fileInput"),
+    preview: document.getElementById("previewCanvas"),
+    previewEmpty: document.getElementById("previewEmpty"),
+    questionInput: document.getElementById("candidateInput"),
+    runBtn: document.getElementById("runBtn"),
+    stagePills: document.querySelectorAll(".stage-pill"),
+    processPanel: document.getElementById("processPanel"),
+    inferImageRow: document.getElementById("inferImageRow"),
+    inferTextRow: document.getElementById("inferTextRow"),
+    inferPhoto: document.getElementById("inferPhoto"),
+    inferImageEncWrap: document.getElementById("inferImageEncWrap"),
+    inferImgVec: document.getElementById("inferImgVec"),
+    inferTextEncWrap: document.getElementById("inferTextEncWrap"),
+    inferCaptionChips: document.getElementById("inferCaptionChips"),
+    inferTextVecs: document.getElementById("inferTextVecs"),
+    demoBrain: document.getElementById("demoBrain"),
+    resultCard: document.getElementById("resultCard"),
+    matchList: document.getElementById("matchList"),
+    resultSource: document.getElementById("resultSource"),
+    toast: document.getElementById("toast")
+  };
+
+  let currentImage = null;
+  let toastTimer = 0;
+
+  init();
+
+  function init(){
+    buildStep1Grid();
+    buildBatchDiagram();
+    bindTokenizer();
+    bindSamples();
+    bindUpload();
+    el.runBtn.addEventListener("click", runAnalysis);
+  }
+
+  // ---------- STEP 1: patch-grid illustration, animates in when scrolled into view ----------
+  function buildStep1Grid(){
+    const labels = [
+      { i:8, v:"0.42" }, { i:9, v:"0.71" }, { i:14, v:"0.18" }, { i:15, v:"0.63" }
+    ];
+    for(let i = 0; i < 24; i++){
+      const cell = document.createElement("div");
+      const hit = labels.find(l => l.i === i);
+      if(hit){
+        cell.className = "patch-cell tagged";
+        cell.innerHTML = `<span>${hit.v}</span>`;
+      } else {
+        cell.className = "patch-cell";
+      }
+      cell.style.transitionDelay = `${i * 22}ms`;
+      el.step1Grid.appendChild(cell);
+    }
+
+    if("IntersectionObserver" in window){
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if(entry.isIntersecting){
+            el.step1Grid.classList.add("revealed");
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold:.4 });
+      io.observe(el.step1Grid);
+    } else {
+      el.step1Grid.classList.add("revealed");
+    }
+  }
+
+  // ---------- Batch contrastive-training diagram (CLIP paper style) ----------
+  function buildBatchDiagram(){
+    const diagram = document.getElementById("batchDiagram");
+    const tChipsEl = document.getElementById("tChips");
+    const iChipsEl = document.getElementById("iChips");
+    const gridEl = document.getElementById("batchGrid");
+    if(!diagram || !tChipsEl || !iChipsEl || !gridEl) return;
+
+    // 5 slots each: 1,2,3,ellipsis,N — mirrors the CLIP paper's T1,T2,T3,...,TN layout
+    const tLabels = ["T\u2081","T\u2082","T\u2083","\u22EF","T\u2099"];
+    const iLabels = ["I\u2081","I\u2082","I\u2083","\u22EE","I\u2099"];
+
+    tLabels.forEach((label, idx) => {
+      const chip = document.createElement("span");
+      chip.className = "vchip t";
+      chip.textContent = label;
+      chip.style.transitionDelay = `${300 + idx * 90}ms`;
+      tChipsEl.appendChild(chip);
+    });
+    iLabels.forEach((label, idx) => {
+      const chip = document.createElement("span");
+      chip.className = "vchip i";
+      chip.textContent = label;
+      chip.style.transitionDelay = `${450 + idx * 90}ms`;
+      iChipsEl.appendChild(chip);
+    });
+
+    // corner cell
+    const corner = document.createElement("div");
+    corner.className = "bg-cell header";
+    corner.textContent = "";
+    corner.style.transitionDelay = "700ms";
+    gridEl.appendChild(corner);
+
+    // column headers (T1..TN)
+    tLabels.forEach((label, c) => {
+      const cell = document.createElement("div");
+      cell.className = "bg-cell header t";
+      cell.textContent = label;
+      cell.style.transitionDelay = `${720 + c * 40}ms`;
+      gridEl.appendChild(cell);
+    });
+
+    // rows: row header (I label) + 5 dot-product cells
+    iLabels.forEach((rowLabel, r) => {
+      const rowHeader = document.createElement("div");
+      rowHeader.className = "bg-cell header i";
+      rowHeader.textContent = rowLabel;
+      rowHeader.style.transitionDelay = `${900 + r * 120}ms`;
+      gridEl.appendChild(rowHeader);
+
+      for(let c = 0; c < 5; c++){
+        const cell = document.createElement("div");
+        const isEllipsisRow = r === 3;
+        const isEllipsisCol = c === 3;
+        cell.className = "bg-cell";
+        cell.style.transitionDelay = `${900 + r * 120 + c * 40}ms`;
+
+        if(isEllipsisRow && isEllipsisCol){
+          cell.textContent = "\u22F1"; // diagonal dots
+        } else if(isEllipsisRow){
+          cell.textContent = "\u22EE"; // vertical dots
+        } else if(isEllipsisCol){
+          cell.textContent = "\u22EF"; // horizontal dots
+        } else {
+          cell.textContent = `${iLabels[r]}\u00B7${tLabels[c]}`;
+          if(r === c){
+            cell.classList.add("diag");
+          }
+        }
+        gridEl.appendChild(cell);
+      }
+    });
+
+    function playBatchDiagram(){
+      diagram.classList.remove("revealed");
+      diagram.querySelectorAll(".bg-cell.diag").forEach(el => el.classList.remove("pulse"));
+      // 強制瀏覽器重新計算一次樣式，確保「先回到隱藏狀態」這件事真的生效，
+      // 不然移除又馬上加回 class，瀏覽器可能會合併成沒有變化，動畫就不會播。
+      void diagram.offsetWidth;
+      requestAnimationFrame(() => {
+        diagram.classList.add("revealed");
+        window.setTimeout(() => {
+          diagram.querySelectorAll(".bg-cell.diag").forEach(el => el.classList.add("pulse"));
+        }, 1900);
+      });
+    }
+
+    const replayBtn = document.getElementById("replayBatchBtn");
+    if(replayBtn) replayBtn.addEventListener("click", playBatchDiagram);
+
+    if("IntersectionObserver" in window){
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if(entry.isIntersecting){
+            playBatchDiagram();
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold:.15 });
+      io.observe(diagram);
+    } else {
+      playBatchDiagram();
+    }
+  }
+
+  // ---------- STEP 2: live tokenizer demo ----------
+  function naiveTokenize(text){
+    const tokens = [];
+    const re = /[A-Za-z0-9]+|[\u4e00-\u9fff]|[^\sA-Za-z0-9\u4e00-\u9fff]/g;
+    let match;
+    while((match = re.exec(text)) !== null){
+      tokens.push(match[0]);
+    }
+    return tokens;
+  }
+
+  function renderTokens(text){
+    const tokens = naiveTokenize(text.trim());
+    el.tokenChips.innerHTML = "";
+    tokens.forEach((t, i) => {
+      const span = document.createElement("span");
+      span.className = "chip pop";
+      span.style.animationDelay = `${i * 45}ms`;
+      span.textContent = t;
+      el.tokenChips.appendChild(span);
     });
   }
 
-  specimenCount.textContent = `標本 Specimens (${specimens.length})`;
+  function bindTokenizer(){
+    el.tokenizerInput.addEventListener("input", () => renderTokens(el.tokenizerInput.value));
+    renderTokens(el.tokenizerInput.value);
+  }
 
-  const pendingCount = specimens.filter(s => !s.analyzed).length;
-  const analyzedCount = specimens.length - pendingCount;
+  // ---------- STEP 4: demo ----------
+  function bindSamples(){
+    el.sampleBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const img = btn.querySelector("img");
+        loadImageFromUrl(img.src, () => showToast("範例照片已載入"));
+      });
+    });
+  }
 
-  if(!isAnimating){
-    if(specimens.length === 0){
-      analyzeBtn.disabled = true;
-      analyzeBtn.textContent = '開始分析';
-      analyzeNote.textContent = '請先上傳照片';
-    } else if(pendingCount === 0){
-      analyzeBtn.disabled = false;
-      analyzeBtn.textContent = '重新分析';
-      analyzeNote.textContent = `${analyzedCount} 份標本已完成分析`;
-    } else {
-      analyzeBtn.disabled = false;
-      analyzeBtn.textContent = analyzedCount > 0 ? `分析新標本 (${pendingCount})` : '開始分析';
-      analyzeNote.textContent = `${pendingCount} 份標本等待分析`;
+  function bindUpload(){
+    el.dropZone.addEventListener("click", () => el.fileInput.click());
+    el.fileInput.addEventListener("change", e => {
+      const file = e.target.files && e.target.files[0];
+      if(file) loadImageFromFile(file);
+    });
+    ["dragenter","dragover"].forEach(type => {
+      el.dropZone.addEventListener(type, e => { e.preventDefault(); el.dropZone.classList.add("drag"); });
+    });
+    ["dragleave","drop"].forEach(type => {
+      el.dropZone.addEventListener(type, e => { e.preventDefault(); el.dropZone.classList.remove("drag"); });
+    });
+    el.dropZone.addEventListener("drop", e => {
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if(file && file.type.startsWith("image/")) loadImageFromFile(file);
+    });
+  }
+
+  function loadImageFromFile(file){
+    const reader = new FileReader();
+    reader.onload = ev => loadImageFromUrl(ev.target.result, () => showToast("照片已載入"));
+    reader.readAsDataURL(file);
+  }
+
+  function loadImageFromUrl(url, done){
+    // 用 fetch 把圖片抓成 blob 再轉成本地 dataURL，
+    // 避免 Wikimedia 的網址轉址（redirect）跟 <img crossOrigin> 搭配時常見的 CORS 失敗問題。
+    fetch(url)
+      .then(res => {
+        if(!res.ok) throw new Error(`圖片下載失敗（${res.status}）`);
+        return res.blob();
+      })
+      .then(blob => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("圖片轉換失敗"));
+        reader.readAsDataURL(blob);
+      }))
+      .then(dataUrl => {
+        const img = new Image();
+        img.onload = () => {
+          currentImage = img;
+          drawPreview();
+          resetResult();
+          if(done) done();
+        };
+        img.onerror = () => showToast("圖片載入失敗，換一張試試");
+        img.src = dataUrl;
+      })
+      .catch(err => {
+        console.error(err);
+        showToast("圖片載入失敗，換一張試試");
+      });
+  }
+
+  function drawPreview(){
+    const canvas = el.preview;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const scale = Math.max(canvas.width / currentImage.width, canvas.height / currentImage.height);
+    const sw = canvas.width / scale, sh = canvas.height / scale;
+    const sx = (currentImage.width - sw) / 2, sy = (currentImage.height - sh) / 2;
+    ctx.drawImage(currentImage, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    el.previewEmpty.style.display = "none";
+  }
+
+  // 把「使用者的照片」跟「使用者打的每一句候選文字」都畫成 CLIP 的雙編碼器架構：
+  // 照片 → 圖片編碼器 → 圖片向量；每句話 → 文字編碼器 → 各自的文字向量。
+  function animateInferDiagram(candidates){
+    return new Promise(resolve => {
+      el.inferPhoto.innerHTML = `<img src="${currentImage.src}" alt="你的照片">`;
+      el.inferCaptionChips.innerHTML = "";
+      el.inferTextVecs.innerHTML = "";
+      el.inferImgVec.classList.remove("diag");
+      el.inferImgVec.textContent = "I";
+
+      candidates.forEach((text, i) => {
+        const cap = document.createElement("span");
+        cap.className = "chip pop infer-cap-chip";
+        cap.style.animationDelay = `${i * 70}ms`;
+        cap.title = text;
+        cap.textContent = text;
+        el.inferCaptionChips.appendChild(cap);
+
+        const vec = document.createElement("span");
+        vec.className = "vchip t";
+        vec.dataset.idx = String(i);
+        vec.textContent = `T${i + 1}`;
+        vec.style.transitionDelay = `${900 + i * 90}ms`;
+        el.inferTextVecs.appendChild(vec);
+      });
+
+      // 圖片那排先動
+      el.inferImageRow.classList.add("show");
+      window.setTimeout(() => el.inferPhoto.classList.add("show"), 60);
+      window.setTimeout(() => el.inferImageEncWrap.classList.add("show"), 340);
+      window.setTimeout(() => el.inferImgVec.classList.add("show"), 620);
+
+      // 文字那排接著動
+      window.setTimeout(() => el.inferTextRow.classList.add("show"), 260);
+      window.setTimeout(() => el.inferTextEncWrap.classList.add("show"), 700 + candidates.length * 70);
+      window.setTimeout(() => {
+        el.inferTextVecs.querySelectorAll(".vchip").forEach(v => v.classList.add("show"));
+      }, 900);
+
+      const total = 900 + candidates.length * 90 + 500;
+      window.setTimeout(resolve, total);
+    });
+  }
+
+  function highlightTopMatch(candidates, topLabel){
+    const idx = candidates.findIndex(c => c === topLabel);
+    if(idx < 0) return;
+    el.inferImgVec.classList.add("diag");
+    const chip = el.inferTextVecs.querySelector(`.vchip[data-idx="${idx}"]`);
+    if(chip) chip.classList.add("diag");
+  }
+
+  function resetResult(){
+    el.resultCard.style.display = "none";
+    el.processPanel.style.display = "none";
+    [el.inferImageRow, el.inferTextRow].forEach(row => row && row.classList.remove("show"));
+    [el.inferPhoto, el.inferImageEncWrap, el.inferTextEncWrap].forEach(node => node && node.classList.remove("show"));
+    if(el.inferImgVec) el.inferImgVec.classList.remove("show", "diag");
+    if(el.inferCaptionChips) el.inferCaptionChips.innerHTML = "";
+    if(el.inferTextVecs) el.inferTextVecs.innerHTML = "";
+    setStage(-1);
+  }
+
+  function setStage(index){
+    el.stagePills.forEach(pill => {
+      pill.classList.toggle("active", Number(pill.dataset.stage) <= index);
+    });
+  }
+
+  async function runAnalysis(){
+    if(!currentImage){
+      showToast("先選一張照片吧");
+      return;
     }
-    updateTrayStatic();
-  }
-}
-
-function updateTrayStatic(){
-  const analyzed = specimens.filter(s => s.analyzed);
-  if(analyzed.length === 0){
-    traySwatch.style.background = '#2a2a2e';
-    trayHex.textContent = '— — —';
-    trayHex.classList.remove('busy');
-    trayRgb.textContent = 'rgb( — , — , — )';
-    trayCount.textContent = specimens.length ? '尚未分析，按下開始分析' : '尚未採集任何標本';
-    trayProgress.style.width = '0%';
-    return;
-  }
-  const pooled = [];
-  analyzed.forEach(s => pooled.push(...s.pixels));
-  const result = mode === 'average' ? averageOf(pooled) : dominantOf(pooled);
-  traySwatch.style.background = result.hex;
-  trayHex.textContent = result.hex.toUpperCase();
-  trayHex.classList.remove('busy');
-  trayRgb.textContent = `rgb( ${result.r}, ${result.g}, ${result.b} )`;
-  trayCount.textContent = mode === 'average'
-    ? `由 ${analyzed.length} 份標本調和而成`
-    : `由 ${analyzed.length} 份標本共同聚類，最大色群占 ${Math.round((result.share||0)*100)}%`;
-  trayProgress.style.width = '0%';
-}
-
-async function scrambleHex(el, finalHex, duration){
-  const steps = 8;
-  const stepTime = duration / steps;
-  for(let i=0;i<steps;i++){
-    let s = '#';
-    for(let j=0;j<6;j++) s += randHexChar();
-    el.textContent = s.toUpperCase();
-    await sleep(stepTime);
-  }
-  el.textContent = finalHex.toUpperCase();
-}
-
-async function animate(){
-  if(isAnimating) return;
-  const pending = specimens.filter(s => !s.analyzed);
-  const targets = pending.length > 0 ? pending : specimens;
-  if(targets.length === 0) return;
-
-  isAnimating = true;
-  analyzeBtn.disabled = true;
-  analyzeBtn.textContent = '分析中…';
-  analyzeNote.textContent = mode === 'average' ? '正在逐一量測像素平均值' : '正在逐一進行像素聚類分析';
-  trayHex.classList.add('busy');
-  modeAvgBtn.disabled = true;
-  modeDomBtn.disabled = true;
-
-  if(pending.length === 0){
-    specimens.forEach(s => s.analyzed = false);
-    render();
-  }
-
-  for(let i=0; i<targets.length; i++){
-    const s = targets[i];
-    if(mode === 'dominant' && !s.dom){
-      s.dom = dominantOf(s.pixels);
+    const candidates = el.questionInput.value
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
+    if(candidates.length === 0){
+      showToast("至少打一句話再送出");
+      return;
     }
-    const col = currentColorOf(s);
-    const card = grid.querySelector(`.card[data-id="${s.id}"]`);
-    if(card){
-      card.classList.add('scanning');
-      await sleep(300);
-      const swatch = card.querySelector('.card-swatch');
-      const hexEl = card.querySelector('.card-hex');
-      swatch.style.background = col.hex;
-      await scrambleHex(hexEl, col.hex, 260);
-      await sleep(120);
-      card.classList.remove('pending','scanning');
-      const pendingTag = card.querySelector('.pending-tag');
-      if(pendingTag) pendingTag.remove();
-      if(mode === 'dominant' && s.dom){
-        const cardTextEl = card.querySelector('.card-text');
-        if(cardTextEl && !cardTextEl.querySelector('.card-share')){
-          const shareEl = document.createElement('div');
-          shareEl.className = 'card-share';
-          shareEl.textContent = `占比 ${Math.round(s.dom.share*100)}%`;
-          cardTextEl.insertBefore(shareEl, cardTextEl.querySelector('.card-name'));
-        }
-      }
-    }
-    s.analyzed = true;
 
-    const analyzedSoFar = specimens.filter(x => x.analyzed);
-    const pooled = [];
-    analyzedSoFar.forEach(x => pooled.push(...x.pixels));
-    const liveResult = mode === 'average' ? averageOf(pooled) : dominantOf(pooled, K, 4);
-    traySwatch.style.background = liveResult.hex;
-    trayRgb.textContent = `rgb( ${liveResult.r}, ${liveResult.g}, ${liveResult.b} )`;
-    trayProgress.style.width = `${Math.round((i+1)/targets.length*100)}%`;
+    el.runBtn.disabled = true;
+    el.resultCard.style.display = "none";
+    resetResult();
+    el.processPanel.style.display = "block";
+    el.demoBrain.classList.remove("thinking-active");
+    el.demoBrain.textContent = "等待中…";
+
+    setStage(0);
+    drawPreview();
+    await wait(150);
+
+    setStage(1);
+    await animateInferDiagram(candidates);
+    el.demoBrain.classList.add("thinking-active");
+    el.demoBrain.textContent = "計算相似度中…";
+
+    try {
+      const matches = await callClipModel(currentImage, candidates);
+      setStage(2);
+      el.demoBrain.classList.remove("thinking-active");
+      el.demoBrain.textContent = "算完了 ✓";
+      if(matches[0]) highlightTopMatch(candidates, matches[0].label);
+      showResult(matches);
+    } catch(err){
+      console.error(err);
+      showToast(err && err.message ? err.message : "模型呼叫失敗，請稍後再試一次");
+      el.demoBrain.classList.remove("thinking-active");
+      el.demoBrain.textContent = "呼叫失敗";
+      setStage(-1);
+    } finally {
+      el.runBtn.disabled = false;
+    }
   }
 
-  const analyzed = specimens.filter(s => s.analyzed);
-  const pooledFinal = [];
-  analyzed.forEach(x => pooledFinal.push(...x.pixels));
-  const finalResult = mode === 'average' ? averageOf(pooledFinal) : dominantOf(pooledFinal);
-  await scrambleHex(trayHex, finalResult.hex, 420);
-  traySwatch.style.background = finalResult.hex;
-  trayRgb.textContent = `rgb( ${finalResult.r}, ${finalResult.g}, ${finalResult.b} )`;
-  trayCount.textContent = mode === 'average'
-    ? `由 ${analyzed.length} 份標本調和而成`
-    : `由 ${analyzed.length} 份標本共同聚類，最大色群占 ${Math.round((finalResult.share||0)*100)}%`;
+  function wait(ms){ return new Promise(r => window.setTimeout(r, ms)); }
 
-  isAnimating = false;
-  modeAvgBtn.disabled = false;
-  modeDomBtn.disabled = false;
-  trayHex.classList.remove('busy');
-  render();
-}
+  // 真正的 CLIP 推理——直接在瀏覽器裡跑（transformers.js），不用 API、不用金鑰。
+  async function callClipModel(img, candidateLabels){
+    if(!window.clipClassifierPromise){
+      throw new Error("模型還沒準備好，請稍等一下再試");
+    }
 
-fileInput.addEventListener('change', (e) => {
-  handleFiles(e.target.files);
-  fileInput.value = '';
-});
+    let classifier;
+    try {
+      classifier = await window.clipClassifierPromise;
+    } catch {
+      throw new Error("模型載入失敗，請重新整理頁面再試一次");
+    }
 
-['dragenter','dragover'].forEach(evt => {
-  dropZone.addEventListener(evt, (e) => {
-    e.preventDefault(); e.stopPropagation();
-    dropZone.classList.add('drag');
-  });
-});
-['dragleave','drop'].forEach(evt => {
-  dropZone.addEventListener(evt, (e) => {
-    e.preventDefault(); e.stopPropagation();
-    dropZone.classList.remove('drag');
-  });
-});
-dropZone.addEventListener('drop', (e) => {
-  const dt = e.dataTransfer;
-  if(dt && dt.files) handleFiles(dt.files);
-});
+    // transformers.js 可以直接吃圖片的 data URL（img.src 本身就是本機圖片，不用轉 base64 再送出去）
+    const output = await classifier(img.src, candidateLabels);
 
-clearBtn.addEventListener('click', () => {
-  if(isAnimating) return;
-  specimens = [];
-  render();
-});
+    if(!Array.isArray(output) || output.length === 0){
+      throw new Error("模型沒有回傳可用的結果");
+    }
 
-analyzeBtn.addEventListener('click', () => {
-  animate();
-});
+    return output
+      .map(item => ({
+        label: String(item.label || ""),
+        score: Math.round((Number(item.score) || 0) * 100)
+      }))
+      .sort((a, b) => b.score - a.score);
+  }
 
-modeAvgBtn.addEventListener('click', () => setMode('average'));
-modeDomBtn.addEventListener('click', () => setMode('dominant'));
+  function showResult(matches){
+    el.resultCard.style.display = "block";
+    el.resultCard.style.animation = "none";
+    void el.resultCard.offsetWidth;
+    el.resultCard.style.animation = "fadeInUp .5s ease-out 1";
 
-render();
+    el.matchList.innerHTML = "";
+    matches.forEach((m, i) => {
+      const row = document.createElement("div");
+      row.className = "match-card" + (i === 0 ? " top" : "");
+      row.style.animationDelay = `${i * 80}ms`;
+      const rankInner = i === 0 ? "🏆" : (i + 1);
+      const tag = i === 0 ? `<span class="match-tag">最搭</span>` : "";
+      row.innerHTML = `
+        <div class="match-rank">${rankInner}</div>
+        <div class="match-head">
+          <span class="match-label-wrap">
+            <span class="match-text">${escapeHtml(m.label)}</span>
+            ${tag}
+          </span>
+          <span class="match-pct">${m.score}%</span>
+        </div>
+        <div class="match-track"><div class="match-fill"></div></div>
+      `;
+      el.matchList.appendChild(row);
+      requestAnimationFrame(() => {
+        row.querySelector(".match-fill").style.width = `${m.score}%`;
+      });
+    });
+
+    el.resultSource.textContent = "這是 CLIP 真的算出來的相似度，不是預先寫好的答案。";
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function showToast(text){
+    window.clearTimeout(toastTimer);
+    el.toast.textContent = text;
+    el.toast.classList.add("show");
+    toastTimer = window.setTimeout(() => el.toast.classList.remove("show"), 1800);
+  }
+})();
 </script>
 </body>
 </html>
